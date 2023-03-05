@@ -1,0 +1,169 @@
+create table Science_class (Enrollment_no int, Name varchar, Science_Marks int);
+
+insert into Science_class values (1,'Popeye',33), (2,'Olive',54), (3,'Brutus',98);
+
+copy Science_class from 'C:\Program Files\PostgreSQL\15\data\data_copy\Student.csv' delimiter ',' csv header;
+
+select * from Science_class;
+
+select * from Science_class where Science_Marks>60;
+
+select * from Science_class where Science_Marks>35 and Science_Marks<60;
+
+select * from Science_class where Science_Marks<=35 or Science_Marks>=60;
+
+update science_class set Science_Marks=45 where Name='Popeye';
+
+delete from science_class where Name='Robb';
+
+alter table science_class rename Name to student_name;
+
+drop table science_class;
+
+--Single line comment
+
+/* Multi
+ine
+comment*/
+
+select distinct city from customer where region in ('North','East');
+
+select * from sales where sales between 100 and 500;
+
+select * from customer where customer_name like ('% ____');
+
+select * from sales where discount > 0 order by discount desc;
+
+select * from sales where discount > 0 order by discount asc limit 10;
+
+select sum(sales) as "Sales Sum" from sales;
+
+select count(customer_id) as "Customer Count" from customer where region='North' and age between 20 and 30;
+
+select avg(age) as "Average Age" from customer where region='East';
+
+select * from customer where city='Philadelphia' and age in (select min(age) from customer);
+
+select * from customer where city='Philadelphia' and age in (select max(age) from customer);
+
+select product_id, sum(sales) as Total_Sales,sum(quantity) as Total_Sales_Quantity, count(order_id) as Total_Orders, max(sales) as Max_Sales, min(sales) as Min_Sales, avg(sales) as Avg_Sales from sales group by product_id order by Total_Sales desc;
+
+select product_id, sum(quantity) as total_sold from sales group by product_id having sum(quantity)>10;
+
+select age, case when age<30 then 'Young' when age>60 then 'Senior Citizen' else 'Middle Aged' end as Age_Category from customer;
+
+/*Creating sales table of year 2015*/
+Create table sales_2015 as select * from sales where ship_date between '2015-01-01' and '2015-12-31';
+
+/* Customers with age between 20 and 60 */
+create table customer_20_60 as select * from customer where age between 20 and 60;
+
+select b.state, sum(sales) from customer_20_60 as b left join sales_2015 as a on a.customer_id=b.customer_id group by b.state;
+
+select b.state, sum(sales) from sales_2015 as a right join customer_20_60 as b on a.customer_id=b.customer_id group by b.state;
+
+select a.product_id, product_name,category, sum(quantity),sum(sales) from product as a left join sales as b on a.product_id=b.product_id group by a.product_id;
+
+select a.product_id, product_name,category, sum(quantity),sum(sales) from sales as b right join product as aon a.product_id=b.product_id group by a.product_id;
+
+select customer_name, age, sp.order_id,sp.product_name,sp.category from customer right join (select order_id, customer_id, product_name,category from sales left join product on sales.product_id=product.product_id) as sp on customer.customer_id=sp.customer_id;
+
+create view Daily_Billing as select order_line, product_id, sales, discount from sales order by order_date limit 1;
+
+drop view Daily_Billing;
+
+select product_name,length(product_name) as Name_Length from product;
+
+select max(length(product_name)) as Max_Name_Length from product;
+
+select product_name, category, sub_category, product_name ||', '|| category ||', '|| sub_category as Product_Details from product;
+
+select product_id,substring(product_id for 3) as Part_1, substring(product_id from 5 for 2) as Part_2, substring(product_id from 8) as Part_3 from product;
+
+select sub_category, string_agg(product_name,', ') from product where sub_category in ('Chairs','Tables') group by sub_category;
+
+select random() as Random,customer_id from customer order by Random limit 5;
+
+select sum(floor(sales)) as a, sum(ceil(sales)) as b, sum(round(sales)) as c from sales;
+
+select age(current_date,'1939-04-06');
+
+select extract(month from ship_date), sum(sales) from sales left join product on sales.product_id=product.product_id where product.sub_category='Chairs' group by extract(month from ship_date) order by extract(month from ship_date);
+
+select * from (select *, SUM(salary) OVER (ORDER BY position desc, salary ASC, id ASC) AS cs1 from (SELECT id, position, salary, SUM(salary) OVER (PARTITION BY position ORDER BY salary ASC, id ASC) AS cs fROM candidates ORDER BY position DESC, salary ASC, id ASC) sq1 where cs<=50000) sq2 where cs1<=50000;
+
+select COALESCE(COUNT(CASE WHEN position = 'junior' THEN 1 END), 0) AS junior, COALESCE(COUNT(CASE WHEN position = 'senior' THEN 1 END), 0) AS senior from (select *, SUM(salary) OVER (ORDER BY position desc, salary ASC, id ASC) AS cs1 from 
+(SELECT id, position, salary, SUM(salary) OVER (PARTITION BY position ORDER BY salary ASC, id ASC) AS cs fROM candidates ORDER BY position DESC, salary ASC, id ASC) sq1 where cs<=50000) sq2 where cs1<=50000;
+
+select customer_name from customer where customer_name ~*'^a+[a-z\s]+$';
+
+select customer_name from customer where customer_name ~*'^(a|b|c|d)+[a-z\s]+$';
+
+select customer_name from customer where customer_name ~*'^(a|b|c|d)[a-z]{3}\s[a-z]{4}$';
+
+select customer_name from customer where customer_name ~*'^[a-z]{5}\s(a|b|c|d)[a-z]{4}$';
+
+select * from zipcode where codes ~*'^[0-9]{5,6}$';
+
+select * from (select *, row_number() over (partition by state) as rn from (select customer.customer_id, customer.state, sq.count from customer left join (select customer_id, count(distinct order_id) as count from sales group by customer_id)sq on sq.customer_id=customer.customer_id order by customer.state asc, count desc)sq1)sq2 where rn<4;
+
+select * from (select *, row_number() over (partition by state) as rn, rank() over (partition by state order by count desc) as rk, dense_rank() over (partition by state order by count desc) as dk, ntile(5) over (partition by state order by count desc) as nt from 
+(select customer.customer_id, customer.state, sq.count from customer left join (select customer_id, count(distinct order_id) as count from sales group by customer_id)sq on sq.customer_id=customer.customer_id order by customer.state asc, count desc)sq1)sq2 where nt=5;
+
+select * , avg(revenue) over (partition by state) as avg_revenue from (select customer.customer_id, state, sum(sales) as revenue from customer left join sales on customer.customer_id=sales.customer_id group by customer.customer_id)sq1 order by state, customer_id;
+
+select customer_id, state, count(customer_id) over (partition by state) from customer;
+
+select *, sum(sales_total) over (partition by state) as G_Total from (select sq1.*, customer.state from customer right join (select order_id, max(order_date) as order_date, max(customer_id) as customer_id, sum(sales) as sales_total from sales group by order_id)sq1 on sq1.customer_id=customer.customer_id)sq2 order by state;
+
+select *, sum(sales_total) over (partition by state order by order_date desc) as R_Total from (select sq1.*, customer.state from customer right join (select order_id, max(order_date) as order_date, max(customer_id) as customer_id, sum(sales) as sales_total from sales group by order_id)sq1 on sq1.customer_id=customer.customer_id)sq2 order by state;
+
+select *, lag(sales_total,1) over (partition by customer_id order by order_date), lead(order_date,1) over (partition by customer_id order by order_date) as next_date from (select order_id, max(order_date) as order_date, max(customer_id) as customer_id, sum(sales) as sales_total from sales group by order_id)sq1;
+
+select *, coalesce(first_name,last_name) as f_name, coalesce(last_name,first_name) as l_name from customer_table;
+
+select sales, 'Total Sales: '||to_char(sales,'$9,999.99') as message from sales;
+
+select order_date, to_char(order_date,'DD MM YY') as D1, to_char(order_date,'DAY MON YYYY') as D2, to_char(order_date,'Day MONTH YY') as D3 from sales;
+
+select to_date('2023/03/03','YYYY/MM/DD'), to_date('20230303','YYYYDDMM');
+
+select to_number('1210.73','9999.99'), to_number('$123.486','L999.999');
+
+create user guest with password 'guest';
+
+create user Ankita with password '123' valid until 'Jan 1, 2024';
+
+create user Sunil with password '123' valid until 'infinity';
+
+grant select, insert, delete on sales to Ankita;
+
+revoke delete on sales from Ankita;
+
+grant all on sales to Sunil;
+
+revoke all on sales from Sunil;
+
+drop user Ankita;
+
+alter user guest rename to ABC;
+
+select * from pg_user;
+
+select * from pg_stat_activity;
+
+create tablespace NewSpace location 'C:\Program Files\PostgreSQL\15\data\data_copy';
+
+create table test (i int) tablespace NewSpace;
+
+select * from pg_tablespace;
+
+truncate table customer_table;
+
+explain select * from customer;
+
+explain verbose select distinct * from customer;
+
+create schema test;
+
+create table test.customer as select * from customer;
